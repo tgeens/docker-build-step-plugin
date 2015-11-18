@@ -33,6 +33,7 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 
+import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.api.DockerException;
 import com.github.dockerjava.api.model.AuthConfig;
@@ -109,14 +110,9 @@ public class DockerBuilder extends Builder {
 
 		private static DockerClient createDockerClient(String dockerUrl, String dockerVersion,
 				AuthConfig authConfig) {
-			// TODO JENKINS-26512
-			SSLConfig dummySSLConf = (new SSLConfig() {
-				public SSLContext getSSLContext() throws KeyManagementException, UnrecoverableKeyException,
-						NoSuchAlgorithmException, KeyStoreException {
-					return null;
-				}
-			});
 
+			SSLConfig dummySSLConf = getSSLConfig();
+			
 			DockerClientConfigBuilder configBuilder = new DockerClientConfigBuilder().withUri(dockerUrl)
 				.withVersion(dockerVersion).withSSLConfig(dummySSLConf)
 	     			// Each Docker command will create its own docker client, which means
@@ -130,6 +126,17 @@ public class DockerBuilder extends Builder {
 			}
 			ClassLoader classLoader = Jenkins.getInstance().getPluginManager().uberClassLoader;
 			return DockerClientBuilder.getInstance(configBuilder).withServiceLoaderClassLoader(classLoader).build();
+		}
+		
+		private static SSLConfig getSSLConfig()
+		{
+			// TODO JENKINS-26512
+			return new SSLConfig() {
+				public SSLContext getSSLContext() throws KeyManagementException, UnrecoverableKeyException,
+						NoSuchAlgorithmException, KeyStoreException {
+					return null;
+				}
+			};
 		}
 
 		public FormValidation doTestConnection(@QueryParameter String dockerUrl, @QueryParameter String dockerVersion) {
